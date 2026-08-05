@@ -1,0 +1,11 @@
+[Unit]
+Description=Run SMTP_SL mailbox synchronization every two hours
+
+[Timer]
+OnCalendar=*-*-* 00/2:00:00
+Persistent=true
+AccuracySec=1min
+Unit=smtp-sl-mail-sync.service
+
+[Install]
+WantedBy=timers.target

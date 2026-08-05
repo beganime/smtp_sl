@@ -1,0 +1,126 @@
+{% extends 'hub/base.html' %}
+{% block title %}Новое письмо{% endblock %}
+{% block content %}
+<section class="page-heading">
+    <div>
+        <span class="mono-label">{% if shared_mode %}TEAM DIRECT MESSAGE{% else %}DIRECT MESSAGE{% endif %}</span>
+        <h1>{% if shared_mode %}Написать от имени команды{% else %}Написать напрямую{% endif %}</h1>
+        <p>{% if shared_mode %}Выберите ящик любого региона или устройства и укажите адрес получателя.{% else %}Укажите любой email и выберите клиентский ящик, с которого уйдёт письмо.{% endif %}</p>
+    </div>
+    <span class="terminal-badge">smtp.compose</span>
+</section>
+<div class="direct-layout">
+    <section class="panel direct-composer">
+        <div class="window-bar"><span></span><span></span><span></span><code>new-message.eml</code></div>
+        <form method="post" enctype="multipart/form-data" class="form-stack attachment-form direct-form">
+            {% csrf_token %}
+            {% if form.non_field_errors %}<div class="form-error">{{ form.non_field_errors|striptags }}</div>{% endif %}
+            <div class="form-pair">
+                <div class="mailbox-picker" data-search-url="{% url 'mailbox_search_api' %}">
+                    <label for="mailbox-picker-search"><span>{{ form.mailbox.label }}</span></label>
+                    {{ form.mailbox }}
+                    <div class="mailbox-picker-control">
+                        <input id="mailbox-picker-search" type="search" value="{% if selected_mailbox %}{{ selected_mailbox.email }}{% endif %}" placeholder="Начните вводить email или ФИО…" autocomplete="off">
+                        <button type="button" class="mailbox-picker-clear" aria-label="Очистить выбор">×</button>
+                    </div>
+                    <div class="mailbox-picker-results" role="listbox" hidden></div>
+                    <small class="mailbox-picker-hint">{% if selected_mailbox %}Выбран: {{ selected_mailbox.display_name|default:selected_mailbox.email }}{% else %}Введите минимум 2 символа — полный список не загружается.{% endif %}</small>
+                    {% if form.mailbox.errors %}<small class="field-error">{{ form.mailbox.errors|striptags }}</small>{% endif %}
+                </div>
+                <label><span>{{ form.recipient_email.label }}</span>{{ form.recipient_email }}{% if form.recipient_email.errors %}<small class="field-error">{{ form.recipient_email.errors|striptags }}</small>{% endif %}</label>
+            </div>
+            <label><span>{{ form.subject.label }}</span>{{ form.subject }}{% if form.subject.errors %}<small class="field-error">{{ form.subject.errors|striptags }}</small>{% endif %}</label>
+            <label><span>{{ form.body.label }}</span>{{ form.body }}{% if form.body.errors %}<small class="field-error">{{ form.body.errors|striptags }}</small>{% endif %}</label>
+            <label class="attachment-picker">
+                <span class="attachment-icon">＋</span>
+                <span><strong>Прикрепить документы, фото или архив</strong><small>До 10 файлов · максимум 50 МБ суммарно</small></span>
+                {{ form.attachments }}
+            </label>
+            <div class="selected-files" aria-live="polite"></div>
+            {% if form.attachments.errors %}<small class="field-error">{{ form.attachments.errors|striptags }}</small>{% endif %}
+            <button class="button primary wide" type="submit">Отправить письмо <span>→</span></button>
+        </form>
+    </section>
+    <aside class="panel direct-history">
+        <div class="panel-head"><div><span class="mono-label">OUTBOX</span><h2>Последние отправления</h2></div></div>
+        <div class="direct-history-list">
+            {% for item in history %}
+            <article>
+                <div><strong>{{ item.recipient_email }}</strong><span>{{ item.subject }}</span></div>
+                <time>{{ item.sent_at|date:'d.m.Y H:i' }}</time>
+                <small class="{% if item.status == 'sent' %}sent{% else %}failed{% endif %}">{{ item.get_status_display }}</small>
+                {% if item.attachments.count %}<em>📎 {{ item.attachments.count }}</em>{% endif %}
+            </article>
+            {% empty %}<div class="empty-state">Прямых отправлений пока нет.</div>{% endfor %}
+        </div>
+    </aside>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+document.querySelectorAll('.mailbox-picker').forEach(picker => {
+    const search = picker.querySelector('input[type="search"]');
+    const hidden = picker.querySelector('input[type="hidden"]');
+    const results = picker.querySelector('.mailbox-picker-results');
+    const hint = picker.querySelector('.mailbox-picker-hint');
+    const clear = picker.querySelector('.mailbox-picker-clear');
+    let timer;
+    const close = () => {
+        results.hidden = true;
+        results.replaceChildren();
+    };
+    search.addEventListener('input', () => {
+        hidden.value = '';
+        clearTimeout(timer);
+        const query = search.value.trim();
+        if (query.length < 2) {
+            hint.textContent = 'Введите минимум 2 символа.';
+            close();
+            return;
+        }
+        hint.textContent = 'Ищу ящик…';
+        timer = setTimeout(async () => {
+            try {
+                const response = await fetch(`${picker.dataset.searchUrl}?q=${encodeURIComponent(query)}`, {
+                    headers: {'X-Requested-With': 'XMLHttpRequest'}
+                });
+                const data = await response.json();
+                results.replaceChildren();
+                data.results.forEach(item => {
+                    const button = document.createElement('button');
+                    button.type = 'button';
+                    button.setAttribute('role', 'option');
+                    const title = document.createElement('strong');
+                    const meta = document.createElement('small');
+                    title.textContent = item.email;
+                    meta.textContent = [item.name, item.owner, item.region].filter(Boolean).join(' · ');
+                    button.append(title, meta);
+                    button.addEventListener('click', () => {
+                        hidden.value = item.id;
+                        search.value = item.email;
+                        hint.textContent = `Выбран: ${item.name}`;
+                        close();
+                    });
+                    results.append(button);
+                });
+                results.hidden = false;
+                hint.textContent = data.results.length ? `Найдено: ${data.results.length}` : 'Ничего не найдено. Попробуйте часть email или ФИО.';
+            } catch {
+                hint.textContent = 'Поиск временно недоступен.';
+                close();
+            }
+        }, 250);
+    });
+    clear.addEventListener('click', () => {
+        search.value = '';
+        hidden.value = '';
+        hint.textContent = 'Введите минимум 2 символа.';
+        close();
+        search.focus();
+    });
+    document.addEventListener('click', event => {
+        if (!picker.contains(event.target)) close();
+    });
+});
+</script>
+{% endblock %}

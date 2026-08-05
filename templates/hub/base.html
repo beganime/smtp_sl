@@ -1,0 +1,43 @@
+{% load static %}
+<!doctype html>
+<html lang="ru">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    {% if request.resolver_match.url_name == 'mosaic_monitor_settings' %}<meta name="robots" content="noindex,nofollow">{% endif %}
+    <title>{% block title %}Почтовый хаб{% endblock %} · SMTP_SL</title>
+    <link rel="stylesheet" href="{% static 'mailer/hub.css' %}?v=20260731-mosaic-monitor">
+    <script src="{% static 'mailer/hub.js' %}?v=20260729-multifile" defer></script>
+</head>
+<body>
+<header class="topbar">
+    <div class="nav-shell">
+        <a class="brand" href="{% if request.resolver_match.url_name == 'mosaic_monitor_settings' %}{% url 'mosaic_monitor_settings' %}{% else %}{% url 'hub_dashboard' %}{% endif %}" aria-label="SMTP_SL — главная">
+            <span class="brand-mark"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7.5 12 12l7-4.5M5 7.5V17h14V7.5M5 7.5 12 3l7 4.5"/></svg></span>
+            <span>SMTP_<b>SL</b></span>
+        </a>
+        {% if request.resolver_match.url_name != 'mosaic_monitor_settings' %}
+        <nav class="main-nav" aria-label="Основная навигация">
+            <a href="{% url 'hub_dashboard' %}" {% if request.resolver_match.url_name == 'hub_dashboard' %}class="active"{% endif %}>Обзор</a>
+            <a href="{% url 'inbox' %}" {% if request.resolver_match.url_name == 'inbox' or request.resolver_match.url_name == 'message_detail' %}class="active"{% endif %}>Входящие</a>
+            <a href="{% url 'compose' %}" {% if request.resolver_match.url_name == 'compose' %}class="active"{% endif %}>Написать</a>
+            <a href="{% url 'mailbox_list' %}" {% if request.resolver_match.url_name == 'mailbox_list' %}class="active"{% endif %}>Ящики</a>
+            <a href="{% url 'shared_mail' %}" {% if request.resolver_match.url_name == 'shared_mail' or request.resolver_match.url_name == 'shared_message_detail' or request.resolver_match.url_name == 'shared_compose' %}class="active"{% endif %}>Команда</a>
+            <a href="{% url 'campaign_center' %}" {% if request.resolver_match.url_name == 'campaign_center' %}class="active"{% endif %}>Рассылка</a>
+        </nav>
+        {% endif %}
+        {% if request.user.is_authenticated %}
+        <div class="account">
+            <div><span class="account-name">{{ request.user.get_full_name|default:request.user.username }}</span><span class="account-device">{% if request.user.manager_profile %}{{ request.user.manager_profile.device }}{% else %}Менеджер{% endif %}</span></div>
+            <form method="post" action="{% url 'logout' %}">{% csrf_token %}<button class="icon-button" type="submit" title="Выйти" aria-label="Выйти"><svg viewBox="0 0 24 24"><path d="M10 17l5-5-5-5M15 12H3M14 3h5a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-5"/></svg></button></form>
+        </div>
+        {% endif %}
+    </div>
+</header>
+<main class="page-shell">
+    {% if messages %}<div class="flash-stack">{% for message in messages %}<div class="flash {{ message.tags }}">{{ message }}</div>{% endfor %}</div>{% endif %}
+    {% block content %}{% endblock %}
+</main>
+{% block scripts %}{% endblock %}
+</body>
+</html>

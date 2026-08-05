@@ -1,0 +1,28 @@
+{% load static %}
+<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Вход · SMTP_SL</title><link rel="stylesheet" href="{% static 'mailer/hub.css' %}"></head>
+<body class="auth-page">
+<main class="auth-shell">
+    <section class="auth-copy">
+        <a class="brand" href="/"><span class="brand-mark"><svg viewBox="0 0 24 24"><path d="M5 7.5 12 12l7-4.5M5 7.5V17h14V7.5M5 7.5 12 3l7 4.5"/></svg></span><span>SMTP_<b>SL</b></span></a>
+        <div class="eyebrow"><span class="status-dot"></span> Единый контур коммуникаций</div>
+        <h1>Все ответы вузов.<br>В одном окне.</h1>
+        <p>Почтовый хаб связывает клиентские ящики, входящие письма и карточки абитуриентов — без десятков вкладок.</p>
+        <div class="auth-metrics"><div><strong>01</strong><span>единый inbox</span></div><div><strong>24/7</strong><span>контроль писем</span></div><div><strong>0</strong><span>потерянных ответов</span></div></div>
+    </section>
+    <section class="auth-card-wrap">
+        <div class="glow"></div>
+        <div class="auth-card">
+            <div class="window-bar"><span></span><span></span><span></span><code>manager.session</code></div>
+            <div class="auth-card-body">
+                <span class="mono-label">ЗАЩИЩЁННЫЙ ДОСТУП</span><h2>Вход менеджера</h2><p>Используйте данные закреплённого устройства.</p>
+                <form method="post" class="form-stack">{% csrf_token %}
+                    {% if form.non_field_errors %}<div class="form-error">{{ form.non_field_errors|striptags }}</div>{% endif %}
+                    {% for field in form %}<label><span>{{ field.label }}</span>{{ field }}{% if field.errors %}<small class="field-error">{{ field.errors|striptags }}</small>{% endif %}</label>{% endfor %}
+                    <button class="button primary wide" type="submit">Открыть кабинет <span>→</span></button>
+                </form>
+                <div class="secure-note"><svg viewBox="0 0 24 24"><path d="M7 10V7a5 5 0 0 1 10 0v3M5 10h14v11H5z"/></svg><span>Сессия привязывается к указанному устройству</span></div>
+                <p class="auth-link">Нет аккаунта? <a href="{% url 'register' %}">Зарегистрироваться</a></p>
+            </div>
+        </div>
+    </section>
+</main></body></html>

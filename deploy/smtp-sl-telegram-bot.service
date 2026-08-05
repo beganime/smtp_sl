@@ -1,0 +1,18 @@
+[Unit]
+Description=SMTP_SL Telegram search bot
+After=network-online.target smtp-sl.service
+
+[Service]
+User=smtp_sl
+Group=smtp_sl
+WorkingDirectory=/opt/smtp_sl/app
+EnvironmentFile=/etc/smtp_sl.env
+Environment=PYTHONUNBUFFERED=1
+ExecStart=/opt/smtp_sl/venv/bin/python manage.py run_telegram_bot
+Restart=always
+RestartSec=5
+PrivateTmp=true
+NoNewPrivileges=true
+
+[Install]
+WantedBy=multi-user.target

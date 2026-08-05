@@ -1,0 +1,17 @@
+ОТКРЫТА НОВАЯ ЗАПИСЬ MOSAIC VISA
+
+Время проверки: {{ checked_at|date:"d.m.Y H:i:s" }}
+
+Доступные даты:
+{% for item in opened %}- {{ item.title }} · {{ item.date }}
+  Статус: {{ item.after }}
+  Записаться: {{ item.booking_url }}
+{% endfor %}
+
+Официальные календари:
+{% for url in calendar_urls %}- {{ url }}
+{% endfor %}
+
+Запись может быстро закрыться. Проверьте доступность и завершите запись на официальном сайте.
+
+SMTP_SL · https://tmmail.ru/

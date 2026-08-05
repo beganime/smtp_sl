@@ -1,0 +1,13 @@
+.env
+.env.*
+!.env.example
+venv/
+__pycache__/
+*.py[cod]
+staticfiles/
+media/
+backups/
+deploy/*.key
+deploy/*.pem
+deploy/*_ed25519
+deploy/*_ed25519.pub

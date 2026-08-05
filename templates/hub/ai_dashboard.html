@@ -1,0 +1,77 @@
+{% extends 'hub/base.html' %}
+{% block title %}AI-анализ писем{% endblock %}
+{% block content %}
+<section class="page-heading ai-heading">
+    <div>
+        <span class="mono-label">GEMINI MAIL INTELLIGENCE</span>
+        <h1>Важные письма и действия</h1>
+        <p>Gemini группирует письма вузов, извлекает ссылки и учётные данные и отсеивает обычные рассылки.</p>
+    </div>
+    <div class="ai-config-state {% if config.enabled and config.api_key_count %}ready{% endif %}">
+        <span>{% if config.enabled and config.api_key_count %}AI работает{% else %}Нужна настройка{% endif %}</span>
+        <small>{{ config.model_name }} · ключей: {{ config.api_key_count }}</small>
+        {% if request.user.is_staff %}<a href="{% url 'admin:mailer_geminiconfiguration_change' config.pk %}">Настройки →</a>{% endif %}
+    </div>
+</section>
+
+<section class="ai-metrics">
+    <article><span>Важных</span><strong>{{ important_count }}</strong></article>
+    <article><span>В очереди</span><strong>{{ pending_count }}</strong></article>
+    <article><span>Ошибок</span><strong>{{ error_count }}</strong></article>
+    <article><span>Показано</span><strong>{{ page_obj.paginator.count }}</strong></article>
+</section>
+
+<section class="ai-groups">
+    <a class="{% if not active_group %}active{% endif %}" href="{% url 'ai_dashboard' %}{% if important_only %}?important=1{% endif %}">
+        <span>Все категории</span><strong>{{ important_count }} важных</strong>
+    </a>
+    {% for group in group_cards %}
+    <a class="{% if active_group == group.value %}active{% endif %}" href="?group={{ group.value }}{% if important_only %}&important=1{% endif %}">
+        <span>{{ group.label }}</span><strong>{{ group.count }}</strong>
+    </a>
+    {% endfor %}
+</section>
+
+<section class="panel ai-results">
+    <form method="get" class="searchbar">
+        {% if active_group %}<input type="hidden" name="group" value="{{ active_group }}">{% endif %}
+        <input name="q" value="{{ query }}" placeholder="Вуз, тема, ящик или действие…">
+        <label class="ai-important-toggle"><input type="checkbox" name="important" value="1" {% if important_only %}checked{% endif %}> Только важные</label>
+        <button class="button ghost" type="submit">Показать</button>
+    </form>
+    <div class="ai-analysis-list">
+        {% for analysis in analyses %}
+        <article class="ai-analysis-row {% if analysis.is_important %}important{% endif %}">
+            <div class="ai-score"><strong>{{ analysis.importance_score }}</strong><small>/100</small></div>
+            <div class="ai-analysis-main">
+                <div class="ai-tags">
+                    {% if analysis.is_important %}<span class="ai-tag urgent">Важно</span>{% endif %}
+                    <span class="ai-tag">{{ analysis.get_university_group_display }}</span>
+                    <span class="ai-tag">{{ analysis.get_topic_display }}</span>
+                </div>
+                <a href="{% url 'shared_message_detail' analysis.message.pk %}">{{ analysis.message.subject }}</a>
+                <strong>{{ analysis.university_name|default:analysis.message.sender_name|default:analysis.message.sender_email }}</strong>
+                <p>{{ analysis.summary }}</p>
+                {% if analysis.action_required %}<div class="ai-action"><b>Что сделать:</b> {{ analysis.action_required }}</div>{% endif %}
+                {% if analysis.suggested_reply %}<div class="ai-action"><b>Вариант ответа:</b> {{ analysis.suggested_reply }}</div>{% endif %}
+                {% if analysis.extracted_links or analysis.extracted_logins or analysis.extracted_passwords %}
+                <div class="ai-extracted">
+                    {% for link in analysis.extracted_links %}<a href="{{ link }}" target="_blank" rel="noopener noreferrer">Ссылка {{ forloop.counter }} ↗</a>{% endfor %}
+                    {% for login in analysis.extracted_logins %}<code>Логин: {{ login }}</code>{% endfor %}
+                    {% for password in analysis.extracted_passwords %}<code>Пароль/код: {{ password }}</code>{% endfor %}
+                </div>
+                {% endif %}
+            </div>
+            <div class="ai-analysis-meta">
+                <span>{{ analysis.message.mailbox.email }}</span>
+                <time>{{ analysis.message.received_at|date:'d.m.Y H:i' }}</time>
+                {% if analysis.deadline %}<b>Срок: {{ analysis.deadline }}</b>{% endif %}
+            </div>
+        </article>
+        {% empty %}
+        <div class="empty-state">Готовых AI-анализов по выбранным условиям пока нет.</div>
+        {% endfor %}
+    </div>
+    {% if page_obj.paginator.num_pages > 1 %}<nav class="pagination"><span>Показано {{ page_obj.start_index }}–{{ page_obj.end_index }} из {{ page_obj.paginator.count }}</span><div>{% if page_obj.has_previous %}<a href="?{% if base_query %}{{ base_query }}&{% endif %}page={{ page_obj.previous_page_number }}">←</a>{% endif %}<b>{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</b>{% if page_obj.has_next %}<a href="?{% if base_query %}{{ base_query }}&{% endif %}page={{ page_obj.next_page_number }}">→</a>{% endif %}</div></nav>{% endif %}
+</section>
+{% endblock %}

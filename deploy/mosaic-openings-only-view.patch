@@ -1,0 +1,22 @@
+--- mailer/views.py
++++ mailer/views.py
+@@ -67,9 +67,16 @@
+                 if result['baseline']:
+                     messages.success(request, 'Первый снимок календарей сохранён. Уведомление не отправлялось.')
+                 elif result['changed']:
+-                    messages.success(
+-                        request,
+-                        f'Проверка завершена: найдено изменений {len(result["changes"])}.',
+-                    )
++                    if result['opened']:
++                        messages.success(
++                            request,
++                            f'Открытых дат: {len(result["opened"])}. Уведомление отправлено.',
++                        )
++                    else:
++                        messages.success(
++                            request,
++                            'Календарь изменился, но новых открытых дат нет. Изменение сохранено в истории.',
++                        )
+                 else:
+                     messages.success(request, 'Проверка завершена: изменений нет.')

@@ -1,0 +1,19 @@
+[Unit]
+Description=SMTP_SL delete inbound mail older than 30 days
+After=smtp-sl.service
+
+[Service]
+Type=oneshot
+User=smtp_sl
+Group=smtp_sl
+WorkingDirectory=/opt/smtp_sl/app
+EnvironmentFile=/etc/smtp_sl.env
+Environment=PYTHONUNBUFFERED=1
+ExecStart=/opt/smtp_sl/venv/bin/python manage.py cleanup_old_mail --days 30 --batch-size 500
+TimeoutStartSec=30min
+Nice=10
+IOSchedulingClass=best-effort
+IOSchedulingPriority=7
+PrivateTmp=true
+NoNewPrivileges=true
+

@@ -1,0 +1,11 @@
+[Unit]
+Description=Clean SMTP_SL mail older than 30 days daily
+
+[Timer]
+OnCalendar=*-*-* 04:15:00
+Persistent=true
+AccuracySec=5min
+Unit=smtp-sl-mail-cleanup.service
+
+[Install]
+WantedBy=timers.target

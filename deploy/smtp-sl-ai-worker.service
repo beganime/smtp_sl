@@ -1,0 +1,17 @@
+[Unit]
+Description=SMTP_SL Gemini email analysis worker
+After=network-online.target smtp-sl.service
+
+[Service]
+User=smtp_sl
+Group=smtp_sl
+WorkingDirectory=/opt/smtp_sl/app
+EnvironmentFile=/etc/smtp_sl.env
+ExecStart=/opt/smtp_sl/venv/bin/python manage.py process_tasks --queue ai-analysis --sleep 2
+Restart=always
+RestartSec=5
+PrivateTmp=true
+NoNewPrivileges=true
+
+[Install]
+WantedBy=multi-user.target

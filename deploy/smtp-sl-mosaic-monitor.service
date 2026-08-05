@@ -1,0 +1,19 @@
+[Unit]
+Description=SMTP_SL Mosaic Visa appointment monitor
+After=network-online.target smtp-sl.service
+Wants=network-online.target
+
+[Service]
+User=smtp_sl
+Group=smtp_sl
+WorkingDirectory=/opt/smtp_sl/app
+EnvironmentFile=/etc/smtp_sl.env
+Environment=PYTHONUNBUFFERED=1
+ExecStart=/opt/smtp_sl/venv/bin/python manage.py run_mosaic_monitor
+Restart=always
+RestartSec=10
+PrivateTmp=true
+NoNewPrivileges=true
+
+[Install]
+WantedBy=multi-user.target

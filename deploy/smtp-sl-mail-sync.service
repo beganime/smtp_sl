@@ -1,0 +1,19 @@
+[Unit]
+Description=SMTP_SL sequential IMAP mailbox synchronization
+After=network-online.target smtp-sl.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=smtp_sl
+Group=smtp_sl
+WorkingDirectory=/opt/smtp_sl/app
+EnvironmentFile=/etc/smtp_sl.env
+Environment=PYTHONUNBUFFERED=1
+ExecStart=/opt/smtp_sl/venv/bin/python manage.py queue_mailbox_sync
+TimeoutStartSec=5min
+Nice=5
+IOSchedulingClass=best-effort
+IOSchedulingPriority=6
+PrivateTmp=true
+NoNewPrivileges=true

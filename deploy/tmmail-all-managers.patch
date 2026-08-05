@@ -1,0 +1,23 @@
+--- mailer/views.py
++++ mailer/views.py
+@@ -174,12 +174,13 @@
+ 
+ 
+ def _can_manage_tmmail(user):
+     return bool(
+         user.is_authenticated
+-        and (
++        and user.is_active
++        and (
+             user.is_superuser
+-            or user.username.casefold() == settings.TMMAIL_REGISTRY_ACCOUNT.casefold()
++            or hasattr(user, 'manager_profile')
+         )
+     )
+ 
+ 
+--- templates/hub/base.html
++++ templates/hub/base.html
+@@ -25,1 +25,1 @@
+-            {% if request.user.username == 'tmmail.ru' or request.user.is_superuser %}<a href="{% url 'tmmail_mailbox_list' %}" {% if request.resolver_match.url_name == 'tmmail_mailbox_list' or request.resolver_match.url_name == 'tmmail_mailbox_create' or request.resolver_match.url_name == 'tmmail_mailbox_connect' or request.resolver_match.url_name == 'tmmail_mailbox_delete' %}class="active"{% endif %}>TMMail</a>{% endif %}
++            {% if request.user.is_superuser or request.user.manager_profile %}<a href="{% url 'tmmail_mailbox_list' %}" {% if request.resolver_match.url_name == 'tmmail_mailbox_list' or request.resolver_match.url_name == 'tmmail_mailbox_create' or request.resolver_match.url_name == 'tmmail_mailbox_connect' or request.resolver_match.url_name == 'tmmail_mailbox_delete' %}class="active"{% endif %}>TMMail</a>{% endif %}

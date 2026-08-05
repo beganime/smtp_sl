@@ -1,0 +1,215 @@
+{% extends 'hub/base.html' %}
+{% block title %}Почта команды{% endblock %}
+{% block content %}
+<section class="page-heading team-heading">
+    <div>
+        <span class="mono-label">TEAM MAIL ACCESS</span>
+        <h1>Почта регионов и устройств</h1>
+        <p>Выберите регион, ответственного пользователя и ящик. Настройки и подключение чужих ящиков недоступны.</p>
+    </div>
+    <div class="heading-actions">
+        {% if selected_mailbox %}
+        <form method="post" action="{% url 'shared_mailbox_sync' selected_mailbox.pk %}">
+            {% csrf_token %}
+            {% if active_region %}<input type="hidden" name="region" value="{{ active_region }}">{% endif %}
+            {% if active_profile %}<input type="hidden" name="profile" value="{{ active_profile }}">{% endif %}
+            <input type="hidden" name="mailbox" value="{{ selected_mailbox.pk }}">
+            <input type="hidden" name="folder" value="{{ active_folder }}">
+            {% if query %}<input type="hidden" name="q" value="{{ query }}">{% endif %}
+            <input type="hidden" name="period" value="{{ active_period }}">
+            {% if active_date %}<input type="hidden" name="date" value="{{ active_date }}">{% endif %}
+            <button class="button ghost" type="submit">Обновить почту</button>
+        </form>
+        {% endif %}
+        <a class="button primary" href="{% url 'shared_compose' %}{% if active_mailbox %}?mailbox={{ active_mailbox }}{% endif %}">Написать с ящика <span>→</span></a>
+    </div>
+</section>
+
+<div class="team-layout">
+    <aside class="panel team-directory">
+        <span class="filter-title">РЕГИОНЫ</span>
+        <a class="team-filter {% if not active_region %}active{% endif %}" href="?folder={{ active_folder }}&period={{ active_period }}{% if active_date %}&date={{ active_date }}{% endif %}"><span>Все регионы</span></a>
+        {% for region in regions %}
+        <a class="team-filter {% if active_region == region.pk|stringformat:'s' %}active{% endif %}" href="?region={{ region.pk }}&folder={{ active_folder }}&period={{ active_period }}{% if active_date %}&date={{ active_date }}{% endif %}">
+            <span><strong>{{ region.name }}</strong><small>{{ region.city }}</small></span><b>{{ region.mailbox_count }}</b>
+        </a>
+        {% endfor %}
+        <span class="filter-title gap">ТЕЛЕФОНЫ И УСТРОЙСТВА</span>
+        {% for owner in owners %}
+        <a class="team-filter owner-filter {% if active_profile == owner.pk|stringformat:'s' %}active{% endif %}" href="?{% if active_region %}region={{ active_region }}&{% endif %}profile={{ owner.pk }}&folder={{ active_folder }}&period={{ active_period }}{% if active_date %}&date={{ active_date }}{% endif %}">
+            <span class="team-avatar">{{ owner.phone|slice:'-2:' }}</span>
+            <span><strong>{{ owner.phone }}{% if owner.user_id == request.user.pk %} · Вы{% endif %}</strong><small>{{ owner.device }} · {{ owner.city|default:'Город не указан' }}</small></span>
+            <b>{{ owner.mailbox_count }}</b>
+        </a>
+        {% empty %}<div class="empty-state compact">В выбранном регионе нет устройств.</div>{% endfor %}
+    </aside>
+
+    <section class="panel team-inbox">
+        <div class="team-mailbox-strip">
+            <a class="{% if not active_mailbox %}active{% endif %}" href="?{% if active_region %}region={{ active_region }}&{% endif %}{% if active_profile %}profile={{ active_profile }}&{% endif %}folder={{ active_folder }}&period={{ active_period }}{% if active_date %}&date={{ active_date }}{% endif %}">Все ящики</a>
+            {% for mailbox in mailboxes %}
+            <a class="{% if active_mailbox == mailbox.pk|stringformat:'s' %}active{% endif %}" href="?{% if active_region %}region={{ active_region }}&{% endif %}{% if active_profile %}profile={{ active_profile }}&{% endif %}mailbox={{ mailbox.pk }}&folder={{ active_folder }}&period={{ active_period }}{% if active_date %}&date={{ active_date }}{% endif %}">
+                <strong>{{ mailbox.display_name|default:mailbox.email }}</strong><small>{{ mailbox.email }}</small>
+            </a>
+            {% endfor %}
+        </div>
+        <div class="team-toolbar">
+            <div class="tab-switcher">
+                <a class="{% if active_folder == 'primary' %}active{% endif %}" href="?{% if active_region %}region={{ active_region }}&{% endif %}{% if active_profile %}profile={{ active_profile }}&{% endif %}{% if active_mailbox %}mailbox={{ active_mailbox }}&{% endif %}folder=primary&period={{ active_period }}{% if active_date %}&date={{ active_date }}{% endif %}">Основные</a>
+                <a class="{% if active_folder == 'google' %}active{% endif %}" href="?{% if active_region %}region={{ active_region }}&{% endif %}{% if active_profile %}profile={{ active_profile }}&{% endif %}{% if active_mailbox %}mailbox={{ active_mailbox }}&{% endif %}folder=google&period={{ active_period }}{% if active_date %}&date={{ active_date }}{% endif %}">Google</a>
+                <a class="{% if active_folder == 'spam' %}active{% endif %}" href="?{% if active_region %}region={{ active_region }}&{% endif %}{% if active_profile %}profile={{ active_profile }}&{% endif %}{% if active_mailbox %}mailbox={{ active_mailbox }}&{% endif %}folder=spam&period={{ active_period }}{% if active_date %}&date={{ active_date }}{% endif %}">Спам</a>
+                <a class="{% if active_folder == 'sent' %}active{% endif %}" href="?{% if active_region %}region={{ active_region }}&{% endif %}{% if active_profile %}profile={{ active_profile }}&{% endif %}{% if active_mailbox %}mailbox={{ active_mailbox }}&{% endif %}folder=sent&period={{ active_period }}{% if active_date %}&date={{ active_date }}{% endif %}">Отправленные</a>
+            </div>
+            <form method="get" class="searchbar team-search">
+                <input type="hidden" name="folder" value="{{ active_folder }}">
+                <input type="hidden" name="period" value="{{ active_period }}">
+                {% if active_date %}<input type="hidden" name="date" value="{{ active_date }}">{% endif %}
+                <input name="q" value="{{ query }}" placeholder="Поиск по всем письмам и ящикам…">
+                <button class="button ghost small" type="submit">Найти</button>
+            </form>
+        </div>
+        <div class="team-date-filter">
+            <div class="team-period-picker">
+                <span class="team-date-caption">Быстрый период</span>
+                <div class="team-period-chips">
+                    <a class="{% if active_period == 'all' and not active_date %}active{% endif %}" href="?{% if active_region %}region={{ active_region }}&{% endif %}{% if active_profile %}profile={{ active_profile }}&{% endif %}{% if active_mailbox %}mailbox={{ active_mailbox }}&{% endif %}folder={{ active_folder }}&period=all{% if query %}&q={{ query|urlencode }}{% endif %}">Всё</a>
+                    <a class="{% if active_period == 'today' and not active_date %}active{% endif %}" href="?{% if active_region %}region={{ active_region }}&{% endif %}{% if active_profile %}profile={{ active_profile }}&{% endif %}{% if active_mailbox %}mailbox={{ active_mailbox }}&{% endif %}folder={{ active_folder }}&period=today{% if query %}&q={{ query|urlencode }}{% endif %}">Сегодня</a>
+                    <a class="{% if active_period == '3' and not active_date %}active{% endif %}" href="?{% if active_region %}region={{ active_region }}&{% endif %}{% if active_profile %}profile={{ active_profile }}&{% endif %}{% if active_mailbox %}mailbox={{ active_mailbox }}&{% endif %}folder={{ active_folder }}&period=3{% if query %}&q={{ query|urlencode }}{% endif %}">3 дня</a>
+                    <a class="{% if active_period == '7' and not active_date %}active{% endif %}" href="?{% if active_region %}region={{ active_region }}&{% endif %}{% if active_profile %}profile={{ active_profile }}&{% endif %}{% if active_mailbox %}mailbox={{ active_mailbox }}&{% endif %}folder={{ active_folder }}&period=7{% if query %}&q={{ query|urlencode }}{% endif %}">7 дней</a>
+                    <a class="{% if active_period == '30' and not active_date %}active{% endif %}" href="?{% if active_region %}region={{ active_region }}&{% endif %}{% if active_profile %}profile={{ active_profile }}&{% endif %}{% if active_mailbox %}mailbox={{ active_mailbox }}&{% endif %}folder={{ active_folder }}&period=30{% if query %}&q={{ query|urlencode }}{% endif %}">30 дней</a>
+                </div>
+            </div>
+            <form method="get" class="team-calendar-card">
+                {% if active_region %}<input type="hidden" name="region" value="{{ active_region }}">{% endif %}
+                {% if active_profile %}<input type="hidden" name="profile" value="{{ active_profile }}">{% endif %}
+                {% if active_mailbox %}<input type="hidden" name="mailbox" value="{{ active_mailbox }}">{% endif %}
+                <input type="hidden" name="folder" value="{{ active_folder }}">
+                <input type="hidden" name="period" value="all">
+                {% if query %}<input type="hidden" name="q" value="{{ query }}">{% endif %}
+                <span class="calendar-icon" aria-hidden="true">▦</span>
+                <label><small>Календарь</small><input type="date" name="date" value="{{ active_date }}" aria-label="Выбрать точную дату"></label>
+                <button class="calendar-apply" type="submit">Показать</button>
+                {% if active_date %}
+                <a class="calendar-reset" title="Сбросить дату" href="?{% if active_region %}region={{ active_region }}&{% endif %}{% if active_profile %}profile={{ active_profile }}&{% endif %}{% if active_mailbox %}mailbox={{ active_mailbox }}&{% endif %}folder={{ active_folder }}&period=all{% if query %}&q={{ query|urlencode }}{% endif %}">×</a>
+                {% endif %}
+            </form>
+        </div>
+        <form method="post" action="{% url 'shared_mail_bulk' %}" id="team-bulk-form">
+            {% csrf_token %}
+            {% if active_region %}<input type="hidden" name="region" value="{{ active_region }}">{% endif %}
+            {% if active_profile %}<input type="hidden" name="profile" value="{{ active_profile }}">{% endif %}
+            {% if active_mailbox %}<input type="hidden" name="mailbox" value="{{ active_mailbox }}">{% endif %}
+            <input type="hidden" name="folder" value="{{ active_folder }}">
+            {% if query %}<input type="hidden" name="q" value="{{ query }}">{% endif %}
+            <input type="hidden" name="period" value="{{ active_period }}">
+            {% if active_date %}<input type="hidden" name="date" value="{{ active_date }}">{% endif %}
+            <input type="hidden" name="page" value="{{ page_obj.number }}">
+            <div class="bulk-toolbar team-bulk-toolbar">
+                <label class="select-page"><input type="checkbox" id="team-select-page"> Выбрать все на странице</label>
+                <div class="bulk-selected-actions">
+                    <button class="button ghost small" type="submit" name="action" value="mark_read">Прочитано</button>
+                    <button class="button ghost small" type="submit" name="action" value="mark_unread">Не прочитано</button>
+                </div>
+                <span class="team-selected-count" id="team-selected-count">Выбрано: 0</span>
+            </div>
+            <div class="team-letter-list">
+            {% for letter in letters %}
+            <div class="team-letter-shell {% if not letter.is_read %}unread{% endif %}">
+                <label class="row-check" title="Выбрать письмо"><input class="team-letter-check" type="checkbox" name="selected" value="{{ letter.pk }}"></label>
+                <details class="team-letter-details" data-read-url="{% url 'shared_message_mark_read' letter.pk %}">
+                    <summary class="team-letter {% if not letter.is_read %}unread{% endif %}">
+                        <span class="read-mark"></span>
+                        <span class="avatar">{{ letter.sender_name|default:letter.sender_email|slice:':1'|upper }}</span>
+                        <span class="sender"><strong>{{ letter.sender_name|default:letter.sender_email }}</strong><small>{{ letter.sender_email }}</small></span>
+                        <span class="subject"><strong>{{ letter.subject }}</strong><small>{{ letter.body_text|truncatechars:90 }}</small></span>
+                        <span class="team-source"><small>{{ letter.mailbox.region.name|default:'Без региона' }} · {{ letter.mailbox.manager.manager_profile.phone }}</small><strong>{{ letter.mailbox.email }}</strong></span>
+                        <time>{{ letter.received_at|date:'d.m.Y' }}<small>{{ letter.received_at|date:'H:i' }}</small></time>
+                    </summary>
+                    <div class="team-letter-preview">
+                        <div class="team-preview-meta"><span>От: <strong>{{ letter.sender_name|default:letter.sender_email }}</strong> &lt;{{ letter.sender_email }}&gt;</span><span>Кому: {{ letter.recipient_email }}</span></div>
+                        <div class="team-preview-body" id="team-letter-text-{{ letter.pk }}">{% if letter.body_text %}{{ letter.body_text|linebreaksbr }}{% else %}<em>В письме нет текстовой версии. Откройте полную страницу для просмотра HTML.</em>{% endif %}</div>
+                        <div class="team-preview-actions">
+                            {% if letter.attachments.all %}<span class="team-attachment-count">📎 Вложения: {{ letter.attachments.all|length }}</span>{% endif %}
+                            <button class="button ghost small" type="button" data-copy-letter data-copy-target="team-letter-text-{{ letter.pk }}">Копировать текст</button>
+                            <a class="button primary small" href="{% url 'shared_message_detail' letter.pk %}?next={{ return_to|urlencode }}">Ответить <span>→</span></a>
+                        </div>
+                    </div>
+                </details>
+            </div>
+            {% empty %}<div class="empty-state">В выбранном телефоне или регионе писем нет.</div>{% endfor %}
+            </div>
+        </form>
+        {% if page_obj.paginator.num_pages > 1 %}<nav class="pagination"><span>Страница {{ page_obj.number }} из {{ page_obj.paginator.num_pages }}</span><div>{% if page_obj.has_previous %}<a href="?{% if base_query %}{{ base_query }}&{% endif %}page={{ page_obj.previous_page_number }}">←</a>{% endif %}<b>{{ page_obj.number }}</b>{% if page_obj.has_next %}<a href="?{% if base_query %}{{ base_query }}&{% endif %}page={{ page_obj.next_page_number }}">→</a>{% endif %}</div></nav>{% endif %}
+    </section>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+(() => {
+    const form = document.getElementById('team-bulk-form');
+    const selectPage = document.getElementById('team-select-page');
+    const checks = [...document.querySelectorAll('.team-letter-check')];
+    const counter = document.getElementById('team-selected-count');
+    const update = () => {
+        const selected = checks.filter(item => item.checked).length;
+        counter.textContent = `Выбрано: ${selected}`;
+        selectPage.checked = checks.length > 0 && selected === checks.length;
+        selectPage.indeterminate = selected > 0 && selected < checks.length;
+    };
+    selectPage?.addEventListener('change', () => {
+        checks.forEach(item => item.checked = selectPage.checked);
+        update();
+    });
+    checks.forEach(item => item.addEventListener('change', update));
+    const csrf = form?.querySelector('input[name="csrfmiddlewaretoken"]')?.value;
+    document.querySelectorAll('.team-letter-details').forEach(details => {
+        details.addEventListener('toggle', () => {
+            if (!details.open) return;
+            document.querySelectorAll('.team-letter-details[open]').forEach(other => {
+                if (other !== details) other.open = false;
+            });
+            const row = details.closest('.team-letter-shell');
+            if (!row?.classList.contains('unread') || !csrf) return;
+            fetch(details.dataset.readUrl, {
+                method: 'POST',
+                headers: {'X-CSRFToken': csrf, 'X-Requested-With': 'XMLHttpRequest'},
+                credentials: 'same-origin'
+            }).then(response => {
+                if (!response.ok) return;
+                row.classList.remove('unread');
+                details.querySelector('.team-letter')?.classList.remove('unread');
+            });
+        });
+    });
+    document.querySelectorAll('[data-copy-letter]').forEach(button => {
+        button.addEventListener('click', async () => {
+            const source = document.getElementById(button.dataset.copyTarget);
+            const text = source?.innerText?.trim();
+            if (!text) return;
+            const original = button.textContent;
+            try {
+                await navigator.clipboard.writeText(text);
+            } catch {
+                const area = document.createElement('textarea');
+                area.value = text;
+                area.style.position = 'fixed';
+                area.style.opacity = '0';
+                document.body.appendChild(area);
+                area.select();
+                document.execCommand('copy');
+                area.remove();
+            }
+            button.textContent = 'Скопировано ✓';
+            setTimeout(() => button.textContent = original, 1600);
+        });
+    });
+    form?.addEventListener('submit', event => {
+        if (!checks.some(item => item.checked)) {
+            event.preventDefault();
+            alert('Сначала выберите хотя бы одно письмо.');
+        }
+    });
+    update();
+})();
+</script>
+{% endblock %}

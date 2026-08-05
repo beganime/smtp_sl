@@ -1,0 +1,110 @@
+{% extends 'hub/base.html' %}
+{% block title %}Монитор Mosaic Visa{% endblock %}
+{% block content %}
+<div class="page-heading mosaic-heading">
+    <div>
+        <span class="eyebrow">APPOINTMENT WATCHER</span>
+        <h1>Монитор Mosaic Visa</h1>
+        <p>Отслеживает календари и отправляет email только при появлении новой доступной записи.</p>
+    </div>
+    <div class="mosaic-heading-actions">
+        <div class="mosaic-state {% if config.enabled %}ready{% endif %}">
+            <span>{% if config.enabled %}● Мониторинг включён{% else %}○ Мониторинг выключен{% endif %}</span>
+            <small>Интервал: {{ config.check_interval_minutes }} мин.</small>
+        </div>
+        <button class="button ghost" type="button" data-mosaic-settings-open>⚙ Настройки</button>
+    </div>
+</div>
+
+<div class="mosaic-metrics">
+    <article><span>Последняя проверка</span><strong>{% if config.last_checked_at %}{{ config.last_checked_at|date:"d.m.Y H:i" }}{% else %}—{% endif %}</strong></article>
+    <article><span>Последнее изменение</span><strong>{% if config.last_changed_at %}{{ config.last_changed_at|date:"d.m.Y H:i" }}{% else %}—{% endif %}</strong></article>
+    <article><span>Последнее письмо</span><strong>{% if config.last_notification_at %}{{ config.last_notification_at|date:"d.m.Y H:i" }}{% else %}—{% endif %}</strong></article>
+</div>
+
+{% if config.last_error %}
+<div class="mosaic-alert"><strong>Последняя ошибка</strong><span>{{ config.last_error }}</span></div>
+{% endif %}
+
+<div class="mosaic-layout public">
+    <section class="panel mosaic-events">
+        <div class="panel-head"><div><span class="mono-label">EVENT LOG</span><h2>История</h2></div></div>
+        <div class="mosaic-event-list">
+            {% for event in events %}
+            <article class="{{ event.event_type }}">
+                <div><strong>{{ event.get_event_type_display }}</strong><time>{{ event.created_at|date:"d.m.Y H:i:s" }}</time></div>
+                <p>{{ event.summary }}</p>
+                {% if event.details %}<details><summary>Подробности</summary><pre>{{ event.details }}</pre></details>{% endif %}
+                {% if event.notification_sent %}<small>Письмо отправлено ✓</small>{% endif %}
+            </article>
+            {% empty %}<div class="empty-state">Проверок пока не было.</div>{% endfor %}
+        </div>
+    </section>
+</div>
+
+<section class="panel mosaic-templates">
+    <div class="panel-head"><div><span class="mono-label">EMAIL TEMPLATES</span><h2>Шаблоны писем</h2></div></div>
+    <div>
+        <article>
+            <span>Тестовое письмо</span>
+            <h3>[Mosaic Visa] Тест мониторинга очереди</h3>
+            <pre>Это тестовое письмо подтверждает, что уведомления настроены правильно.
+Интервал проверки, список календарей и получатели будут указаны автоматически.</pre>
+        </article>
+        <article>
+            <span>Новая открытая запись</span>
+            <h3>[Mosaic Visa] ОТКРЫТА ЗАПИСЬ — город</h3>
+            <pre>Доступные даты:
+— город, дата, статус и прямая ссылка для записи
+
+Обычные изменения календаря остаются в истории на сайте и не отправляются по email.</pre>
+        </article>
+    </div>
+</section>
+
+<dialog class="mosaic-settings-dialog" data-mosaic-settings-dialog {% if open_settings %}open{% endif %}>
+    <div class="mosaic-dialog-card">
+        <div class="panel-head">
+            <div><span class="mono-label">CONFIGURATION</span><h2>Настройки монитора</h2></div>
+            <button class="icon-button" type="button" aria-label="Закрыть настройки" data-mosaic-settings-close>×</button>
+        </div>
+        <form method="post" class="form-stack mosaic-form">
+            {% csrf_token %}
+            <div class="mosaic-secret">{% if password_is_set %}🔐 Пароль приложения сохранён{% else %}⚠ Пароль приложения не задан{% endif %}</div>
+            {% if form.non_field_errors %}<div class="form-error">{{ form.non_field_errors|striptags }}</div>{% endif %}
+            <label class="mosaic-toggle"><span>{{ form.enabled }} Включить автоматическую проверку</span></label>
+            <label><span>{{ form.calendar_urls.label }}</span>{{ form.calendar_urls }}{% if form.calendar_urls.errors %}<small class="field-error">{{ form.calendar_urls.errors|striptags }}</small>{% endif %}<small>{{ form.calendar_urls.help_text }}</small></label>
+            <div class="form-pair">
+                <label><span>{{ form.check_interval_minutes.label }}</span>{{ form.check_interval_minutes }}{% if form.check_interval_minutes.errors %}<small class="field-error">{{ form.check_interval_minutes.errors|striptags }}</small>{% endif %}</label>
+                <label><span>{{ form.months_ahead.label }}</span>{{ form.months_ahead }}{% if form.months_ahead.errors %}<small class="field-error">{{ form.months_ahead.errors|striptags }}</small>{% endif %}</label>
+            </div>
+            <div class="form-pair">
+                <label><span>{{ form.sender_email.label }}</span>{{ form.sender_email }}{% if form.sender_email.errors %}<small class="field-error">{{ form.sender_email.errors|striptags }}</small>{% endif %}</label>
+                <label><span>{{ form.sender_password.label }}</span>{{ form.sender_password }}{% if form.sender_password.errors %}<small class="field-error">{{ form.sender_password.errors|striptags }}</small>{% endif %}<small>{{ form.sender_password.help_text }}</small></label>
+            </div>
+            <label><span>{{ form.recipients.label }}</span>{{ form.recipients }}{% if form.recipients.errors %}<small class="field-error">{{ form.recipients.errors|striptags }}</small>{% endif %}<small>Получателей можно менять: по одному в строке или через запятую.</small></label>
+            <label><span>{{ form.subject_prefix.label }}</span>{{ form.subject_prefix }}{% if form.subject_prefix.errors %}<small class="field-error">{{ form.subject_prefix.errors|striptags }}</small>{% endif %}</label>
+            <div class="mosaic-actions">
+                <button class="button primary" type="submit" name="action" value="save">Сохранить</button>
+                <button class="button ghost" type="submit" name="action" value="check">Проверить сейчас</button>
+                <button class="button ghost" type="submit" name="action" value="test">Отправить тестовое письмо</button>
+            </div>
+        </form>
+    </div>
+</dialog>
+{% endblock %}
+{% block scripts %}
+<script>
+(() => {
+    const dialog = document.querySelector('[data-mosaic-settings-dialog]');
+    const openButton = document.querySelector('[data-mosaic-settings-open]');
+    const closeButton = document.querySelector('[data-mosaic-settings-close]');
+    if (!dialog || !openButton || !closeButton) return;
+    openButton.addEventListener('click', () => dialog.showModal ? dialog.showModal() : dialog.setAttribute('open', ''));
+    closeButton.addEventListener('click', () => dialog.close ? dialog.close() : dialog.removeAttribute('open'));
+    dialog.addEventListener('click', event => {
+        if (event.target === dialog && dialog.close) dialog.close();
+    });
+})();
+</script>
+{% endblock %}
