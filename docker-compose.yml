@@ -1,0 +1,32 @@
+services:
+  web:
+    build: .
+    restart: unless-stopped
+    env_file: .env
+    command: sh -c "python manage.py migrate && python manage.py collectstatic --noinput && gunicorn smtp_sl.wsgi:application --bind 0.0.0.0:8000 --workers 1 --timeout 120"
+    volumes:
+      - smtp_data:/opt/smtp_sl/data
+      - static_data:/app/staticfiles
+    ports:
+      - "127.0.0.1:8020:8000"
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health/', timeout=5).read()\""]
+      interval: 20s
+      timeout: 7s
+      retries: 10
+      start_period: 45s
+
+  worker:
+    build: .
+    restart: unless-stopped
+    env_file: .env
+    command: python manage.py process_tasks --sleep 2
+    volumes:
+      - smtp_data:/opt/smtp_sl/data
+    depends_on:
+      web:
+        condition: service_healthy
+
+volumes:
+  smtp_data:
+  static_data:

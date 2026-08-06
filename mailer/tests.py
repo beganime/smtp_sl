@@ -824,6 +824,7 @@ class HubTests(TestCase):
         self.assertFalse(mailbox.is_active)
         self.assertEqual(mailbox.get_password(), 'application-password')
 
+    @override_settings(MANAGER_REGISTRATION_ENABLED=True)
     def test_registration_creates_profile_and_session(self):
         self.client.logout()
         response = self.client.post(reverse('register'), {
@@ -836,6 +837,7 @@ class HubTests(TestCase):
         self.assertEqual(profile.city, 'Туркменабад')
         self.assertEqual(profile.region, self.region)
 
+    @override_settings(MANAGER_REGISTRATION_ENABLED=True)
     def test_registration_accepts_a_custom_city(self):
         self.client.logout()
         page = self.client.get(reverse('register'))

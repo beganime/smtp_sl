@@ -127,6 +127,8 @@ def manager_logout(request):
 
 
 def register(request):
+    if not settings.MANAGER_REGISTRATION_ENABLED:
+        return JsonResponse({'detail': 'Регистрация менеджеров отключена.'}, status=403)
     form = ManagerRegistrationForm(request.POST or None)
     if request.method == 'POST' and form.is_valid():
         user = form.save()
@@ -135,6 +137,23 @@ def register(request):
     return render(request, 'registration/register.html', {
         'form': form,
         'available_cities': Region.objects.order_by('name').values_list('city', flat=True).distinct(),
+    })
+
+
+def health(request):
+    from django.db import connection
+
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute('SELECT 1')
+            cursor.fetchone()
+    except Exception:
+        return JsonResponse({'status': 'unhealthy', 'database': 'unavailable'}, status=503)
+    return JsonResponse({
+        'status': 'ok',
+        'database': 'ok',
+        'mailbox_api_configured': bool(settings.MAILBOX_IMPORT_API_TOKEN),
+        'mailu_api_configured': bool(settings.MAILU_API_TOKEN),
     })
 
 

@@ -13,6 +13,7 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 from pathlib import Path
 import os
 
+from django.core.exceptions import ImproperlyConfigured
 from django.urls import reverse_lazy
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -28,6 +29,11 @@ MAILBOX_ENCRYPTION_KEY = os.environ.get('MAILBOX_ENCRYPTION_KEY', '')
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get('DJANGO_DEBUG', '1').lower() in {'1', 'true', 'yes'}
+
+if not DEBUG and SECRET_KEY.startswith('django-insecure-'):
+    raise ImproperlyConfigured('DJANGO_SECRET_KEY must be changed in production.')
+if not DEBUG and not MAILBOX_ENCRYPTION_KEY:
+    raise ImproperlyConfigured('MAILBOX_ENCRYPTION_KEY is required in production.')
 
 ALLOWED_HOSTS = [item.strip() for item in os.environ.get('DJANGO_ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',') if item.strip()]
 CSRF_TRUSTED_ORIGINS = [item.strip() for item in os.environ.get('DJANGO_CSRF_TRUSTED_ORIGINS', '').split(',') if item.strip()]
@@ -152,6 +158,7 @@ MAILU_API_BASE_URL = os.environ.get(
     'http://127.0.0.1:8088/api/v1',
 ).rstrip('/')
 MAILU_API_TOKEN = os.environ.get('MAILU_API_TOKEN', '').strip()
+TMMAIL_PROVISION_API_TOKEN = os.environ.get('TMMAIL_PROVISION_API_TOKEN', '').strip()
 TMMAIL_REGISTRY_API_URL = os.environ.get(
     'TMMAIL_REGISTRY_API_URL',
     'https://tmmail.ru/api/v1/mailboxes/',
@@ -159,6 +166,7 @@ TMMAIL_REGISTRY_API_URL = os.environ.get(
 TMMAIL_REGISTRY_ACCOUNT = os.environ.get('TMMAIL_REGISTRY_ACCOUNT', 'tmmail.ru').strip()
 TMMAIL_MAILBOX_DOMAIN = os.environ.get('TMMAIL_MAILBOX_DOMAIN', 'tmmail.ru').strip().casefold()
 TMMAIL_DEFAULT_QUOTA_BYTES = int(os.environ.get('TMMAIL_DEFAULT_QUOTA_BYTES', '250000000'))
+MANAGER_REGISTRATION_ENABLED = os.environ.get('MANAGER_REGISTRATION_ENABLED', '0').lower() in {'1', 'true', 'yes'}
 TELEGRAM_NOTIFICATIONS_ENABLED = os.environ.get('TELEGRAM_NOTIFICATIONS_ENABLED', '0').lower() in {'1', 'true', 'yes'}
 TELEGRAM_BOT_TOKEN = os.environ.get('TELEGRAM_BOT_TOKEN', '').strip()
 TELEGRAM_CHAT_ID = os.environ.get('TELEGRAM_CHAT_ID', '').strip()
@@ -222,7 +230,7 @@ UNFOLD = {
 STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 MEDIA_URL = '/media/'
-MEDIA_ROOT = BASE_DIR / 'media'
+MEDIA_ROOT = Path(os.environ.get('MEDIA_ROOT', BASE_DIR / 'media'))
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 SECURE_SSL_REDIRECT = os.environ.get('DJANGO_SECURE_SSL_REDIRECT', '0').lower() in {'1', 'true', 'yes'}
 SESSION_COOKIE_SECURE = not DEBUG
