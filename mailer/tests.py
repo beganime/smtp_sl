@@ -896,9 +896,10 @@ class HubTests(TestCase):
 
     @patch('mailer.services.imaplib.IMAP4_SSL')
     def test_imap_sync_imports_message_once(self, imap_class):
+        recent_date = format_datetime(timezone.now() - timedelta(minutes=5)).encode('ascii')
         raw = (b'From: University <admission@university.example>\r\n'
                b'To: device-box@yandex.ru\r\nSubject: Admission update\r\n'
-               b'Date: Fri, 11 Jul 2026 10:00:00 +0000\r\n\r\nDocuments accepted.')
+               b'Date: ' + recent_date + b'\r\n\r\nDocuments accepted.')
         connection = imap_class.return_value
         connection.select.return_value = ('OK', [b'1'])
         connection.uid.side_effect = [('OK', [b'501']), ('OK', [(b'501 (RFC822)', raw)])]
@@ -1154,7 +1155,7 @@ class HubTests(TestCase):
         source['From'] = 'University <admission@university.example>'
         source['To'] = self.mailbox.email
         source['Subject'] = 'Documents'
-        source['Date'] = 'Tue, 21 Jul 2026 10:00:00 +0000'
+        source['Date'] = format_datetime(timezone.now() - timedelta(minutes=5))
         source.set_content('Attached document.')
         source.add_attachment(b'PDF test', maintype='application', subtype='pdf', filename='offer.pdf')
 
