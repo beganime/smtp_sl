@@ -1,5 +1,0 @@
-[31/Jul/2026 09:51:26] "GET /hub/mosaic/ HTTP/1.1" 200 7582
-[31/Jul/2026 09:51:26] "GET /static/mailer/hub.js?v=20260729-multifile HTTP/1.1" 304 0
-[31/Jul/2026 09:51:27] "GET /static/mailer/hub.css?v=20260729-mobile-search HTTP/1.1" 200 49129
-[31/Jul/2026 09:51:27] "GET /favicon.ico HTTP/1.1" 404 10666
-[31/Jul/2026 09:51:29] "GET /sw.js HTTP/1.1" 404 10648
