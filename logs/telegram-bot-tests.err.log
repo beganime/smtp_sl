@@ -1,8 +1,0 @@
-Creating test database for alias 'default'...
-.........................................................Telegram notification partially failed for inbound message 1: 6560350312: Telegram API вернул HTTP 403: bot was blocked
-..
-----------------------------------------------------------------------
-Ran 59 tests in 199.611s
-
-OK
-Destroying test database for alias 'default'...

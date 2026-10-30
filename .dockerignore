@@ -1,0 +1,12 @@
+.git
+.env
+venv
+.venv
+__pycache__
+*.pyc
+*.sqlite3
+logs
+data
+media
+secrets
+deploy/*.zip

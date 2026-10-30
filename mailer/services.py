@@ -190,6 +190,14 @@ def _sync_imap_folder(
                 )
             message.attachments_synced = True
             message.save(update_fields=('attachments_synced',))
+        if created:
+            from .manager_registry import manager_registry_is_configured
+            if manager_registry_is_configured():
+                message.manager_sync_pending = True
+                message.manager_sync_error = ''
+                message.save(update_fields=('manager_sync_pending', 'manager_sync_error'))
+                from .tasks import sync_manager_email_task
+                sync_manager_email_task(message.pk, priority=50)
         should_notify = (
             created
             and category == 'primary'

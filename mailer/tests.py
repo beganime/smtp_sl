@@ -18,6 +18,7 @@ from .management.commands.import_sanly_mailboxes import parse_mailbox_rows, pars
 from .ai import analyze_inbound_message, extract_literal_links, should_analyze_with_gemini
 from .models import Campaign, CampaignAttachment, Client, EmailAIAnalysis, GeminiConfiguration, InboundAttachment, InboundMessage, Mailbox, MailboxSyncRun, ManagerProfile, MosaicMonitorConfiguration, MosaicMonitorEvent, OutgoingAttachment, OutgoingMessage, Region
 from .mosaic import check_mosaic_calendars, parse_calendar_html
+from .manager_registry import build_manager_payload, sync_message_to_manager
 from .services import _imap_folder_specs, classify_inbound_message, discover_emails, sync_mailbox
 from .tasks import process_mailbox_sync_task
 from .telegram import (
@@ -824,6 +825,7 @@ class HubTests(TestCase):
         self.assertFalse(mailbox.is_active)
         self.assertEqual(mailbox.get_password(), 'application-password')
 
+    @override_settings(MANAGER_REGISTRATION_ENABLED=True)
     def test_registration_creates_profile_and_session(self):
         self.client.logout()
         response = self.client.post(reverse('register'), {
@@ -836,6 +838,7 @@ class HubTests(TestCase):
         self.assertEqual(profile.city, 'Туркменабад')
         self.assertEqual(profile.region, self.region)
 
+    @override_settings(MANAGER_REGISTRATION_ENABLED=True)
     def test_registration_accepts_a_custom_city(self):
         self.client.logout()
         page = self.client.get(reverse('register'))
@@ -894,9 +897,10 @@ class HubTests(TestCase):
 
     @patch('mailer.services.imaplib.IMAP4_SSL')
     def test_imap_sync_imports_message_once(self, imap_class):
+        recent_date = format_datetime(timezone.now() - timedelta(minutes=5)).encode('ascii')
         raw = (b'From: University <admission@university.example>\r\n'
                b'To: device-box@yandex.ru\r\nSubject: Admission update\r\n'
-               b'Date: Fri, 11 Jul 2026 10:00:00 +0000\r\n\r\nDocuments accepted.')
+               b'Date: ' + recent_date + b'\r\n\r\nDocuments accepted.')
         connection = imap_class.return_value
         connection.select.return_value = ('OK', [b'1'])
         connection.uid.side_effect = [('OK', [b'501']), ('OK', [(b'501 (RFC822)', raw)])]
@@ -907,6 +911,29 @@ class HubTests(TestCase):
         imported = InboundMessage.objects.get(mailbox=self.mailbox, external_uid='501')
         self.assertEqual(imported.sender_email, 'admission@university.example')
         self.assertIn('Documents accepted', imported.body_text)
+
+    def test_manager_registry_payload_carries_canonical_sl_id(self):
+        self.mailbox.canonical_sl_id = 'SL-2027-000040'
+        self.mailbox.save(update_fields=('canonical_sl_id',))
+        payload = build_manager_payload(self.letter)
+        self.assertEqual(payload['sl_id'], 'SL-2027-000040')
+        self.assertEqual(payload['source_id'], f'{self.mailbox.pk}:INBOX:uid-1')
+        self.assertEqual(payload['attachment_count'], 0)
+
+    @override_settings(
+        MANAGER_SL_EMAIL_REGISTRY_URL='https://manager.example.invalid/api/internal/email/records/',
+        MANAGER_SL_EMAIL_REGISTRY_TOKEN='registry-test-token',
+        MANAGER_SL_EMAIL_SYNC_TIMEOUT=2,
+    )
+    @patch('mailer.manager_registry.requests.post')
+    def test_manager_registry_posts_bearer_token(self, post):
+        post.return_value.status_code = 201
+        post.return_value.json.return_value = {'linked': True}
+        result = sync_message_to_manager(self.letter.pk)
+        self.assertTrue(result['linked'])
+        _args, kwargs = post.call_args
+        self.assertEqual(kwargs['headers']['Authorization'], 'Bearer registry-test-token')
+        self.assertNotIn('body_html', kwargs['json'])
 
     @override_settings(
         TELEGRAM_NOTIFICATIONS_ENABLED=True,
@@ -1152,7 +1179,7 @@ class HubTests(TestCase):
         source['From'] = 'University <admission@university.example>'
         source['To'] = self.mailbox.email
         source['Subject'] = 'Documents'
-        source['Date'] = 'Tue, 21 Jul 2026 10:00:00 +0000'
+        source['Date'] = format_datetime(timezone.now() - timedelta(minutes=5))
         source.set_content('Attached document.')
         source.add_attachment(b'PDF test', maintype='application', subtype='pdf', filename='offer.pdf')
 

@@ -1,9 +1,0 @@
-[31/Jul/2026 10:07:47] "GET /hub/mosaic/ HTTP/1.1" 200 8304
-[31/Jul/2026 10:07:48] "GET /static/mailer/hub.css?v=20260729-mobile-search HTTP/1.1" 200 50176
-[31/Jul/2026 10:07:50] "GET /sw.js HTTP/1.1" 404 10648
-[31/Jul/2026 10:08:19] "GET /sw.js HTTP/1.1" 404 10648
-[31/Jul/2026 10:08:27] "GET /hub/mosaic/ HTTP/1.1" 200 7761
-[31/Jul/2026 10:08:27,694] - Broken pipe from ('127.0.0.1', 53936)
-[31/Jul/2026 10:08:34] "GET /hub/mosaic/ HTTP/1.1" 200 8304
-[31/Jul/2026 10:08:35] "GET /static/mailer/hub.css?v=20260731-mosaic-monitor HTTP/1.1" 200 50176
-[31/Jul/2026 10:08:37] "GET /sw.js HTTP/1.1" 404 10648

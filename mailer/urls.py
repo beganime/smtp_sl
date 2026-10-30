@@ -2,8 +2,10 @@ from django.urls import path
 from . import views
 from . import ai_worker_api
 from . import mailbox_api
+from . import tmmail_api
 
 urlpatterns = [
+    path('health/', views.health, name='health'),
     path('', views.home, name='home'),
     path('login/', views.manager_login, name='login'),
     path('logout/', views.manager_logout, name='logout'),
@@ -35,4 +37,5 @@ urlpatterns = [
     path('api/ai-worker/lease/', ai_worker_api.lease_ai_job, name='ai_worker_lease'),
     path('api/ai-worker/submit/', ai_worker_api.submit_ai_job, name='ai_worker_submit'),
     path('api/v1/mailboxes/', mailbox_api.create_mailbox, name='api_create_mailbox'),
+    path('api/v1/tmmail/provision/', tmmail_api.provision_mailbox, name='api_tmmail_provision'),
 ]

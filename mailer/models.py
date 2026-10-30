@@ -99,6 +99,10 @@ class Mailbox(models.Model):
     owner_phone = models.CharField('Владелец телефона', max_length=32, blank=True, help_text='Телефон ответственного пользователя или устройства.')
     email = models.EmailField('Почтовый ящик', unique=True)
     display_name = models.CharField('Название', max_length=160, blank=True)
+    canonical_sl_id = models.CharField(
+        'SL-ID в ManagerSL', max_length=32, blank=True, db_index=True,
+        help_text='Заполняется автоматически при создании ящика из карточки клиента.',
+    )
     provider = models.CharField('Провайдер', max_length=20, choices=PROVIDER_CHOICES, default='other')
     imap_host = models.CharField('IMAP сервер', max_length=255, blank=True)
     imap_port = models.PositiveIntegerField('IMAP порт', default=993)
@@ -401,6 +405,13 @@ class InboundMessage(models.Model):
     telegram_notification_pending = models.BooleanField('Ожидает уведомления Telegram', default=False, db_index=True)
     telegram_notified_at = models.DateTimeField('Уведомление Telegram отправлено', null=True, blank=True)
     telegram_notification_error = models.TextField('Ошибка уведомления Telegram', blank=True)
+    manager_sync_pending = models.BooleanField(
+        'Ожидает синхронизации с ManagerSL', default=False, db_index=True,
+    )
+    manager_synced_at = models.DateTimeField(
+        'Синхронизировано с ManagerSL', null=True, blank=True,
+    )
+    manager_sync_error = models.TextField('Ошибка синхронизации с ManagerSL', blank=True)
     created_at = models.DateTimeField('Загружено', auto_now_add=True)
 
     class Meta:

@@ -6,7 +6,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     {% if request.resolver_match.url_name == 'mosaic_monitor_settings' %}<meta name="robots" content="noindex,nofollow">{% endif %}
     <title>{% block title %}Почтовый хаб{% endblock %} · SMTP_SL</title>
-    <link rel="stylesheet" href="{% static 'mailer/hub.css' %}?v=20260731-mosaic-monitor">
+    <meta name="theme-color" content="#1e293b">
+    <link rel="stylesheet" href="{% static 'mailer/hub.css' %}?v=20260826-sl-theme">
     <script src="{% static 'mailer/hub.js' %}?v=20260729-multifile" defer></script>
 </head>
 <body>
@@ -24,6 +25,7 @@
             <a href="{% url 'mailbox_list' %}" {% if request.resolver_match.url_name == 'mailbox_list' %}class="active"{% endif %}>Ящики</a>
             <a href="{% url 'shared_mail' %}" {% if request.resolver_match.url_name == 'shared_mail' or request.resolver_match.url_name == 'shared_message_detail' or request.resolver_match.url_name == 'shared_compose' %}class="active"{% endif %}>Команда</a>
             <a href="{% url 'campaign_center' %}" {% if request.resolver_match.url_name == 'campaign_center' %}class="active"{% endif %}>Рассылка</a>
+            <a href="https://manager-sl.ru/" rel="noopener">ManagerSL</a>
         </nav>
         {% endif %}
         {% if request.user.is_authenticated %}

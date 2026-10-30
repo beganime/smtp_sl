@@ -7,6 +7,11 @@ __pycache__/
 staticfiles/
 media/
 backups/
+logs/
+*.sqlite3
+data/
+secrets/
+emails.txt
 deploy/*.key
 deploy/*.pem
 deploy/*_ed25519

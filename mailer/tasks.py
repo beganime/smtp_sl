@@ -115,9 +115,43 @@ def analyze_inbound_message_task(message_id, allow_telegram=False, retry_count=0
             schedule=retry_delay,
             priority=100 if allow_telegram else 0,
         )
+    if analysis.status == 'completed':
+        sync_manager_email_task(message_id, priority=50)
     delay = max(0.0, min(float(GeminiConfiguration.load().request_delay_seconds or 0), 60.0))
     if delay:
         time.sleep(delay)
+    close_old_connections()
+
+
+@background(schedule=0, queue='mail-sync')
+def sync_manager_email_task(message_id, retry_count=0):
+    from .manager_registry import ManagerRegistryError, manager_registry_is_configured, sync_message_to_manager
+
+    close_old_connections()
+    if not manager_registry_is_configured():
+        return
+    try:
+        sync_message_to_manager(message_id)
+    except (InboundMessage.DoesNotExist, ManagerRegistryError) as exc:
+        if isinstance(exc, InboundMessage.DoesNotExist):
+            return
+        InboundMessage.objects.filter(pk=message_id).update(
+            manager_sync_pending=True,
+            manager_sync_error=str(exc)[:2000],
+        )
+        if retry_count < 5:
+            sync_manager_email_task(
+                message_id,
+                retry_count=retry_count + 1,
+                schedule=min(60 * (2 ** retry_count), 900),
+                priority=50,
+            )
+        return
+    InboundMessage.objects.filter(pk=message_id).update(
+        manager_sync_pending=False,
+        manager_sync_error='',
+        manager_synced_at=timezone.now(),
+    )
     close_old_connections()
 
 
