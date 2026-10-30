@@ -65,6 +65,9 @@ def provision_mailbox(request):
 
     existing = Mailbox.objects.filter(email__iexact=email).first()
     if existing:
+        if not existing.canonical_sl_id:
+            existing.canonical_sl_id = sl_id
+            existing.save(update_fields=('canonical_sl_id',))
         return JsonResponse({
             'status': 'exists',
             'event_id': event_id,
@@ -88,6 +91,9 @@ def provision_mailbox(request):
         return JsonResponse({'error': str(exc), 'upstream_status': exc.status}, status=502)
 
     mailbox = Mailbox.objects.filter(email__iexact=email).first()
+    if mailbox and mailbox.canonical_sl_id != sl_id:
+        mailbox.canonical_sl_id = sl_id
+        mailbox.save(update_fields=('canonical_sl_id',))
     return JsonResponse({
         'status': 'created',
         'event_id': event_id,

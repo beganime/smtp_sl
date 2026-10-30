@@ -18,6 +18,7 @@ from .management.commands.import_sanly_mailboxes import parse_mailbox_rows, pars
 from .ai import analyze_inbound_message, extract_literal_links, should_analyze_with_gemini
 from .models import Campaign, CampaignAttachment, Client, EmailAIAnalysis, GeminiConfiguration, InboundAttachment, InboundMessage, Mailbox, MailboxSyncRun, ManagerProfile, MosaicMonitorConfiguration, MosaicMonitorEvent, OutgoingAttachment, OutgoingMessage, Region
 from .mosaic import check_mosaic_calendars, parse_calendar_html
+from .manager_registry import build_manager_payload, sync_message_to_manager
 from .services import _imap_folder_specs, classify_inbound_message, discover_emails, sync_mailbox
 from .tasks import process_mailbox_sync_task
 from .telegram import (
@@ -910,6 +911,29 @@ class HubTests(TestCase):
         imported = InboundMessage.objects.get(mailbox=self.mailbox, external_uid='501')
         self.assertEqual(imported.sender_email, 'admission@university.example')
         self.assertIn('Documents accepted', imported.body_text)
+
+    def test_manager_registry_payload_carries_canonical_sl_id(self):
+        self.mailbox.canonical_sl_id = 'SL-2027-000040'
+        self.mailbox.save(update_fields=('canonical_sl_id',))
+        payload = build_manager_payload(self.letter)
+        self.assertEqual(payload['sl_id'], 'SL-2027-000040')
+        self.assertEqual(payload['source_id'], f'{self.mailbox.pk}:INBOX:uid-1')
+        self.assertEqual(payload['attachment_count'], 0)
+
+    @override_settings(
+        MANAGER_SL_EMAIL_REGISTRY_URL='https://manager.example.invalid/api/internal/email/records/',
+        MANAGER_SL_EMAIL_REGISTRY_TOKEN='registry-test-token',
+        MANAGER_SL_EMAIL_SYNC_TIMEOUT=2,
+    )
+    @patch('mailer.manager_registry.requests.post')
+    def test_manager_registry_posts_bearer_token(self, post):
+        post.return_value.status_code = 201
+        post.return_value.json.return_value = {'linked': True}
+        result = sync_message_to_manager(self.letter.pk)
+        self.assertTrue(result['linked'])
+        _args, kwargs = post.call_args
+        self.assertEqual(kwargs['headers']['Authorization'], 'Bearer registry-test-token')
+        self.assertNotIn('body_html', kwargs['json'])
 
     @override_settings(
         TELEGRAM_NOTIFICATIONS_ENABLED=True,

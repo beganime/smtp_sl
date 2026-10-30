@@ -84,9 +84,9 @@ class SendingLogAdmin(ModelAdmin):
 
 @admin.register(Mailbox)
 class MailboxAdmin(ModelAdmin):
-    list_display = ('email', 'display_name', 'region', 'owner_phone', 'provider', 'manager', 'is_active', 'last_synced_at')
+    list_display = ('email', 'canonical_sl_id', 'display_name', 'region', 'owner_phone', 'provider', 'manager', 'is_active', 'last_synced_at')
     list_filter = ('region', 'provider', 'is_active')
-    search_fields = ('email', 'display_name', 'owner_phone', 'client__full_name')
+    search_fields = ('email', 'canonical_sl_id', 'display_name', 'owner_phone', 'client__full_name')
     readonly_fields = ('password_encrypted', 'last_synced_at', 'sync_error', 'created_at')
 
 
@@ -248,10 +248,10 @@ class RegionAdmin(ModelAdmin):
 
 @admin.register(InboundMessage)
 class InboundMessageAdmin(ModelAdmin):
-    list_display = ('subject', 'sender_email', 'mailbox', 'category', 'received_at', 'is_read', 'is_replied')
-    list_filter = ('category', 'is_read', 'is_replied', 'mailbox')
+    list_display = ('subject', 'sender_email', 'mailbox', 'category', 'received_at', 'is_read', 'is_replied', 'manager_synced_at')
+    list_filter = ('category', 'is_read', 'is_replied', 'manager_sync_pending', 'mailbox')
     search_fields = ('subject', 'sender_email', 'body_text')
-    readonly_fields = ('mailbox', 'external_uid', 'sender_name', 'sender_email', 'recipient_email', 'subject', 'body_text', 'body_html', 'received_at', 'created_at')
+    readonly_fields = ('mailbox', 'external_uid', 'sender_name', 'sender_email', 'recipient_email', 'subject', 'body_text', 'body_html', 'received_at', 'manager_sync_pending', 'manager_synced_at', 'manager_sync_error', 'created_at')
 
     def has_add_permission(self, request):
         return False

@@ -176,6 +176,15 @@ TELEGRAM_FORUM_TOPICS = os.environ.get('TELEGRAM_FORUM_TOPICS', '').strip()
 TELEGRAM_SITE_URL = os.environ.get('TELEGRAM_SITE_URL', 'https://tmmail.ru').rstrip('/')
 TELEGRAM_API_IP = os.environ.get('TELEGRAM_API_IP', '').strip()
 TELEGRAM_NOTIFICATION_MAX_AGE_DAYS = int(os.environ.get('TELEGRAM_NOTIFICATION_MAX_AGE_DAYS', '3'))
+MANAGER_SL_EMAIL_REGISTRY_URL = os.environ.get(
+    'MANAGER_SL_EMAIL_REGISTRY_URL',
+    'https://manager-sl.ru/api/internal/email/records/',
+).strip()
+MANAGER_SL_EMAIL_REGISTRY_TOKEN = os.environ.get('MANAGER_SL_EMAIL_REGISTRY_TOKEN', '').strip()
+MANAGER_SL_EMAIL_SOURCE_URL = os.environ.get(
+    'MANAGER_SL_EMAIL_SOURCE_URL', 'https://tmmail.ru/hub/team/inbox/{message_id}/',
+).strip()
+MANAGER_SL_EMAIL_SYNC_TIMEOUT = int(os.environ.get('MANAGER_SL_EMAIL_SYNC_TIMEOUT', '10'))
 
 # --- НАСТРОЙКИ UNFOLD (ЦВЕТА И ДИЗАЙН) ---
 UNFOLD = {
